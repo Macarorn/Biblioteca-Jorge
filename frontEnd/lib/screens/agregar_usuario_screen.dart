@@ -17,6 +17,9 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nombreCtrl = TextEditingController();
+  final _apellidoCtrl = TextEditingController();
+  final _documentoCtrl = TextEditingController();
+  final _telefonoCtrl = TextEditingController();
   final _correoCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _pass2Ctrl = TextEditingController();
@@ -31,6 +34,9 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
   @override
   void dispose() {
     _nombreCtrl.dispose();
+    _apellidoCtrl.dispose();
+    _documentoCtrl.dispose();
+    _telefonoCtrl.dispose();
     _correoCtrl.dispose();
     _passCtrl.dispose();
     _pass2Ctrl.dispose();
@@ -45,6 +51,9 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
 
   void _limpiar() {
     _nombreCtrl.clear();
+    _apellidoCtrl.clear();
+    _documentoCtrl.clear();
+    _telefonoCtrl.clear();
     _correoCtrl.clear();
     _passCtrl.clear();
     _pass2Ctrl.clear();
@@ -64,19 +73,20 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
 
     await ApiService.agregarUsuario({
       "nombre": _nombreCtrl.text.trim(),
+      "apellido": _apellidoCtrl.text.trim(),
+      "documento": _documentoCtrl.text.trim(),
+      "telefono": _telefonoCtrl.text.trim(),
       "correo": _correoCtrl.text.trim(),
-      "genero": genero,
-      "tipo_usuario": tipoUsuario,
-      // Nota: password no la guardamos en ApiService porque es front demo.
-      // Si quieren, se puede incluir en memoria también.
+      "rol": tipoUsuario,
+      "contrasena": _passCtrl.text.trim(),
     });
 
     if (!mounted) return;
     setState(() => _saving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("✅ Usuario guardado")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("✅ Usuario guardado")));
 
     _limpiar();
     Navigator.pop(context);
@@ -122,13 +132,11 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error importando Excel: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("❌ Error importando Excel: $e")));
     }
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -157,10 +165,35 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
                   const SizedBox(height: 14),
 
                   _input(
-                    label: "Nombre Completo",
+                    label: "Nombre",
                     controller: _nombreCtrl,
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? "Obligatorio" : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  _input(
+                    label: "Apellido",
+                    controller: _apellidoCtrl,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? "Obligatorio" : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  _input(
+                    label: "Documento",
+                    controller: _documentoCtrl,
+                    keyboardType: TextInputType.text,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? "Obligatorio" : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  _input(
+                    label: "Teléfono",
+                    controller: _telefonoCtrl,
+                    keyboardType: TextInputType.phone,
+                    validator: (v) => null,
                   ),
                   const SizedBox(height: 12),
 
@@ -171,11 +204,19 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: "Femenino", child: Text("Femenino")),
-                      DropdownMenuItem(value: "Masculino", child: Text("Masculino")),
+                      DropdownMenuItem(
+                        value: "Femenino",
+                        child: Text("Femenino"),
+                      ),
+                      DropdownMenuItem(
+                        value: "Masculino",
+                        child: Text("Masculino"),
+                      ),
                       DropdownMenuItem(value: "Otro", child: Text("Otro")),
                     ],
-                    onChanged: _saving ? null : (v) => setState(() => genero = v ?? "Femenino"),
+                    onChanged: _saving
+                        ? null
+                        : (v) => setState(() => genero = v ?? "Femenino"),
                   ),
                   const SizedBox(height: 12),
 
@@ -203,8 +244,12 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
                       labelText: "Contraseña",
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
-                        onPressed: _saving ? null : () => setState(() => _showPass = !_showPass),
-                        icon: Icon(_showPass ? Icons.visibility_off : Icons.visibility),
+                        onPressed: _saving
+                            ? null
+                            : () => setState(() => _showPass = !_showPass),
+                        icon: Icon(
+                          _showPass ? Icons.visibility_off : Icons.visibility,
+                        ),
                       ),
                     ),
                   ),
@@ -222,8 +267,12 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
                       labelText: "Confirmar Contraseña",
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
-                        onPressed: _saving ? null : () => setState(() => _showPass2 = !_showPass2),
-                        icon: Icon(_showPass2 ? Icons.visibility_off : Icons.visibility),
+                        onPressed: _saving
+                            ? null
+                            : () => setState(() => _showPass2 = !_showPass2),
+                        icon: Icon(
+                          _showPass2 ? Icons.visibility_off : Icons.visibility,
+                        ),
                       ),
                     ),
                   ),
@@ -232,16 +281,31 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
                   DropdownButtonFormField<String>(
                     value: tipoUsuario,
                     decoration: const InputDecoration(
-                      labelText: "Tipo de usuario",
+                      labelText: "Rol",
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: "estudiante", child: Text("Estudiante")),
-                      DropdownMenuItem(value: "profesor", child: Text("Profesor")),
-                      DropdownMenuItem(value: "administrativo", child: Text("Administrativo (Bibliotecario)")),
-                      DropdownMenuItem(value: "administrador", child: Text("Administrador")),
+                      DropdownMenuItem(
+                        value: "estudiante",
+                        child: Text("Estudiante"),
+                      ),
+                      DropdownMenuItem(
+                        value: "profesor",
+                        child: Text("Profesor"),
+                      ),
+                      DropdownMenuItem(
+                        value: "bibliotecario",
+                        child: Text("Bibliotecario"),
+                      ),
+                      DropdownMenuItem(
+                        value: "admin",
+                        child: Text("Administrador"),
+                      ),
                     ],
-                    onChanged: _saving ? null : (v) => setState(() => tipoUsuario = v ?? "estudiante"),
+                    onChanged: _saving
+                        ? null
+                        : (v) =>
+                              setState(() => tipoUsuario = v ?? "estudiante"),
                   ),
 
                   const SizedBox(height: 20),
@@ -252,7 +316,9 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
                         child: SizedBox(
                           height: 46,
                           child: OutlinedButton(
-                            onPressed: _saving ? null : () => Navigator.pop(context),
+                            onPressed: _saving
+                                ? null
+                                : () => Navigator.pop(context),
                             child: const Text("CANCELAR"),
                           ),
                         ),
@@ -274,11 +340,15 @@ class _AgregarUsuarioScreenState extends State<AgregarUsuarioScreen> {
                                 ? const SizedBox(
                                     width: 18,
                                     height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Text(
                                     "GUARDAR",
-                                    style: TextStyle(fontWeight: FontWeight.w800),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                           ),
                         ),
