@@ -1,0 +1,158 @@
+id_usuarioDROP SCHEMA IF EXISTS bibliotecaCristoRey;
+CREATE SCHEMA IF NOT EXISTS bibliotecaCristoRey DEFAULT CHARACTER SET utf8mb4;
+USE bibliotecaCristoRey;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- =====================================================
+-- 1 USUARIOS
+-- =====================================================
+DROP TABLE IF EXISTS login;
+DROP TABLE IF EXISTS devoluciones;
+DROP TABLE IF EXISTS prestamos;
+DROP TABLE IF EXISTS solicitudes_prestamo;
+DROP TABLE IF EXISTS ejemplares_libro;
+DROP TABLE IF EXISTS libros;
+DROP TABLE IF EXISTS usuarios;
+
+CREATE TABLE usuarios (
+  id_usuario   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nombre       VARCHAR(50) NOT NULL,
+  apellido     VARCHAR(50) NOT NULL,
+  documento    VARCHAR(45) NOT NULL,
+  telefono     VARCHAR(20) NULL,
+  correo       VARCHAR(120) NULL,
+  rol          ENUM('estudiante','profesor','bibliotecario','admin') NOT NULL DEFAULT 'estudiante',
+  PRIMARY KEY (id_usuario),
+  UNIQUE KEY uq_usuarios_documento (documento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- 2 LIBROS
+-- =====================================================
+CREATE TABLE libros (
+  id_libro          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  codigo_libro      VARCHAR(50) NOT NULL,
+  titulo            VARCHAR(200) NOT NULL,
+  autor             VARCHAR(150) NOT NULL,
+  area              VARCHAR(100),
+  anio_publicacion  YEAR,
+  estado            ENUM('disponible','prestado') NOT NULL DEFAULT 'disponible',
+  portada_url       VARCHAR(255) NULL,
+  PRIMARY KEY (id_libro),
+  UNIQUE KEY uq_libros_codigo (codigo_libro)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- 3 EJEMPLARES (ANTES DE PRESTAMOS)
+-- =====================================================
+CREATE TABLE ejemplares_libro (
+  id_ejemplar        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_libro           INT UNSIGNED NOT NULL,
+  codigo_inventario  VARCHAR(80) NOT NULL,
+  condicion          ENUM('bueno','regular') NOT NULL DEFAULT 'bueno',
+  disponibilidad     ENUM('disponible','prestado','mantenimiento') NOT NULL DEFAULT 'disponible',
+  PRIMARY KEY (id_ejemplar),
+  UNIQUE KEY uq_ejemplar_codigo (codigo_inventario),
+  KEY idx_ejemplar_libro (id_libro),
+  CONSTRAINT fk_ejemplar_libro
+    FOREIGN KEY (id_libro) REFERENCES libros(id_libro)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- 4 LOGIN
+-- =====================================================
+CREATE TABLE login (
+  id_login    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_usuario  INT UNSIGNED NOT NULL,
+  documento   VARCHAR(50) NOT NULL,
+  contrasena  VARCHAR(255) NOT NULL,
+  PRIMARY KEY (id_login),
+  UNIQUE KEY uq_login_documento (documento),
+  KEY idx_login_usuario (id_usuario),
+  CONSTRAINT fk_login_usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DELIMITER $$
+CREATE TRIGGER insert_pass_user
+BEFORE INSERT ON login
+FOR EACH ROW
+BEGIN
+  SET NEW.contrasena = SHA2(NEW.contrasena, 256);
+END$$
+DELIMITER ;
+
+-- =====================================================
+-- 5 SOLICITUDES
+-- =====================================================
+CREATE TABLE solicitudes_prestamo (
+  id_solicitud INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_usuario   INT UNSIGNED NOT NULL,
+  id_libro     INT UNSIGNED NOT NULL,
+  fecha_solicitud DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  estado ENUM('pendiente','aprobada','rechazada','cancelada') NOT NULL DEFAULT 'pendiente',
+  observacion VARCHAR(255) NULL,
+
+  PRIMARY KEY (id_solicitud),
+  KEY idx_sol_user (id_usuario),
+  KEY idx_sol_libro (id_libro),
+
+  CONSTRAINT fk_sol_user
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  CONSTRAINT fk_sol_libro
+    FOREIGN KEY (id_libro) REFERENCES libros(id_libro) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- 6 PRESTAMOS
+-- =====================================================
+CREATE TABLE prestamos (
+  id_prestamo       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_usuario        INT UNSIGNED NOT NULL,
+  id_libro          INT UNSIGNED NOT NULL,
+  id_ejemplar       INT UNSIGNED NOT NULL,
+  fecha_prestamo    DATE NOT NULL,
+  fecha_vencimiento  DATE NOT NULL,
+  fecha_devolucion  DATE NULL,
+  estado            ENUM('activo','devuelto') NOT NULL DEFAULT 'activo',
+  PRIMARY KEY (id_prestamo),
+  KEY idx_prestamos_usuario (id_usuario),
+  KEY idx_prestamos_libro (id_libro),
+  KEY idx_prestamos_ejemplar (id_ejemplar),
+  CONSTRAINT fk_prestamos_usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  CONSTRAINT fk_prestamos_libro
+    FOREIGN KEY (id_libro) REFERENCES libros(id_libro) ON DELETE CASCADE,
+  CONSTRAINT fk_prestamos_ejemplar
+    FOREIGN KEY (id_ejemplar) REFERENCES ejemplares_libro(id_ejemplar) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- 7 DEVOLUCIONES
+-- =====================================================
+CREATE TABLE devoluciones (
+  id_devolucion     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_prestamo       INT UNSIGNED NOT NULL,
+  fecha_devolucion  DATE NOT NULL,
+  observaciones     TEXT,
+  PRIMARY KEY (id_devolucion),
+  UNIQUE KEY uq_devoluciones_prestamo (id_prestamo),
+  CONSTRAINT fk_devoluciones_prestamo
+    FOREIGN KEY (id_prestamo) REFERENCES prestamos(id_prestamo)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+INSERT INTO usuarios (nombre, apellido, documento, rol)
+VALUES ('Administrador', 'Biblioteca', '1000000000', 'admin');
+ 
+INSERT INTO login (id_usuario, documento, contrasena)
+VALUES (
+  (SELECT id_usuario FROM usuarios WHERE documento = '1000000000'),
+  '1000000000',
+  '1000000000'
+);
