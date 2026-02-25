@@ -1,33 +1,48 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import '../services/api_service.dart';
+import 'book_detail_screen.dart';
+import 'perfil_usuario.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   final Color azul = const Color(0xFF0A2342);
   final Color dorado = const Color(0xFFD4A537);
+
+  bool loading = true;
+  List<Map<String, dynamic>> libros = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => loading = true);
+    try {
+      final data = await ApiService.getLibros();
+      if (!mounted) return;
+      setState(() {
+        libros = data;
+        loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      // HEADER
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(90),
         child: Container(
@@ -49,15 +64,11 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-
-      // BODY
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // BUSCADOR + PERFIL
             Row(
               children: [
                 Expanded(
@@ -77,30 +88,50 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: dorado,
-                  child: const Icon(Icons.person, color: Colors.black),
-                )
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 22,
+                    backgroundColor: dorado,
+                    child: const Icon(Icons.person, color: Colors.black),
+                  ),
+                ),
               ],
             ),
-
             const SizedBox(height: 20),
-
-            // SECCIONES
             sectionTitle('Recomendados'),
-            bookCarousel(),
-
-            sectionTitle('Libros de miedo y suspenso'),
-            bookCarousel(),
-
-            sectionTitle('Libros de anime'),
-            bookCarousel(),
+            loading
+                ? const SizedBox(
+                    height: 160,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : _bookCarousel(libros.take(6).toList()),
+            sectionTitle('Nuevos'),
+            loading
+                ? const SizedBox(
+                    height: 160,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : _bookCarousel(
+                    // Mostrar los libros más recientes basados en `id` (mayor id = más nuevo).
+                    (List<Map<String, dynamic>>.from(libros)..sort((a, b) {
+                          final ai =
+                              int.tryParse((a['id'] ?? '').toString()) ?? 0;
+                          final bi =
+                              int.tryParse((b['id'] ?? '').toString()) ?? 0;
+                          return bi.compareTo(ai);
+                        }))
+                        .take(6)
+                        .toList(),
+                  ),
           ],
         ),
       ),
-
-      // BOTTOM BAR (solo visual)
       bottomNavigationBar: Container(
         height: 60,
         color: azul,
@@ -115,81 +146,86 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // TITULO DE SECCION
   Widget sectionTitle(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, top: 16),
       child: Text(
         text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
       ),
     );
   }
 
-  
-  // CARRUSEL DE LIBROS
-  
-  Widget bookCarousel() {
+  Widget _bookCarousel(List<Map<String, dynamic>> items) {
     final PageController controller = PageController(viewportFraction: 0.35);
-    const int totalLibros = 5;
+    if (items.isEmpty) {
+      return const SizedBox(
+        height: 160,
+        child: Center(child: Text('No hay libros')),
+      );
+    }
 
     return SizedBox(
-      height: 190,
+      height: 160,
       child: Row(
         children: [
-          // FLECHA IZQUIERDA
           IconButton(
             icon: const Icon(Icons.chevron_left, size: 32),
-            onPressed: () {
-              controller.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
+            onPressed: () => controller.previousPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            ),
           ),
-
-          // CARRUSEL
           Expanded(
             child: PageView.builder(
               controller: controller,
+              itemCount: items.length,
               itemBuilder: (context, index) {
-                final libro = (index % totalLibros) + 1;
-
-                return Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
+                final b = items[index];
+                final portada = (b['portadaUrl'] ?? b['portada_url'] ?? '')
+                    .toString();
+                final titulo = (b['titulo'] ?? 'Sin título').toString();
+                return GestureDetector(
+                  onTap: () async {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookDetailScreen(libro: b),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey[200],
+                          ),
+                          child: portada.trim().isEmpty
+                              ? const Icon(Icons.menu_book, size: 48)
+                              : Image.network(portada, fit: BoxFit.cover),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Libro $libro',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 10),
-                    )
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        titulo,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
           ),
-
-          // FLECHA DERECHA
           IconButton(
             icon: const Icon(Icons.chevron_right, size: 32),
-            onPressed: () {
-              controller.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
+            onPressed: () => controller.nextPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            ),
           ),
         ],
       ),

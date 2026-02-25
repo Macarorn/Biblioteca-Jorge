@@ -153,10 +153,15 @@ class ApiService {
     final url = Uri.parse(
       '$baseUrl/api/libros${qs.isEmpty ? '' : '?search=${Uri.encodeQueryComponent(qs)}'}',
     );
-    final r = await http.get(
-      url,
-      headers: _headers(),
-    ); // libros pueden ser públicos
+    http.Response r;
+    try {
+      r = await http.get(url, headers: _headers());
+      if (r.statusCode == 401) {
+        r = await http.get(url, headers: _headers(auth: false));
+      }
+    } catch (e) {
+      rethrow;
+    }
     if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
 
     final j = jsonDecode(r.body);
