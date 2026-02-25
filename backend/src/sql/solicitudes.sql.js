@@ -15,3 +15,11 @@ export const COUNT_EJEMPLARES_DISPONIBLES = `
   FROM ejemplares_libro
   WHERE id_libro = ? AND disponibilidad = 'disponible'
 `;
+
+export const LIST_SOLICITUDES_POR_USUARIO = `
+  SELECT s.id_solicitud, s.id_libro, l.titulo, s.fecha_solicitud, s.estado, s.observacion
+  FROM solicitudes_prestamo s
+  JOIN libros l ON s.id_libro = l.id_libro
+  WHERE s.id_usuario = ?
+  ORDER BY s.fecha_solicitud DESC
+`;

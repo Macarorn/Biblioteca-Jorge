@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 import 'book_detail_screen.dart';
+import 'mis_solicitudes_screen.dart';
 import 'perfil_usuario.dart';
 
 class HomePage extends StatefulWidget {
@@ -102,18 +103,36 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                    );
-                  },
-                  child: CircleAvatar(
-                    radius: 22,
-                    backgroundColor: dorado,
-                    child: const Icon(Icons.person, color: Colors.black),
-                  ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MisSolicitudesScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.history, color: Colors.white),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: 22,
+                        backgroundColor: dorado,
+                        child: const Icon(Icons.person, color: Colors.black),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -151,9 +170,28 @@ class _HomePageState extends State<HomePage> {
         color: azul,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: const [
-            Icon(Icons.home, color: Color(0xFFD4A537), size: 30),
-            Icon(Icons.menu_book, color: Color(0xFFD4A537), size: 30),
+          children: [
+            IconButton(
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+              icon: const Icon(Icons.home, color: Color(0xFFD4A537), size: 30),
+            ),
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MisSolicitudesScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.menu_book,
+                color: Color(0xFFD4A537),
+                size: 30,
+              ),
+            ),
           ],
         ),
       ),

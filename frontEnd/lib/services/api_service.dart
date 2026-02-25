@@ -401,12 +401,50 @@ class ApiService {
     if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
   }
 
+  // GET /api/libros/:id -> detalle completo (incluye `ejemplares_disponibles`)
+  static Future<Map<String, dynamic>> getLibroDetalle(int id) async {
+    final url = Uri.parse('$baseUrl/api/libros/$id');
+    final r = await http.get(url, headers: _headers());
+    if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
+    final j = jsonDecode(r.body);
+    return Map<String, dynamic>.from(j as Map);
+  }
+
+  // POST /api/solicitudes { id_libro }
+  static Future<int> solicitarLibro(int idLibro) async {
+    final url = Uri.parse('$baseUrl/api/solicitudes');
+    final r = await http.post(
+      url,
+      headers: _headers(),
+      body: jsonEncode({'id_libro': idLibro}),
+    );
+    if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
+    final j = jsonDecode(r.body);
+    return int.tryParse(
+          (j['id_solicitud'] ?? j['insertId'] ?? j['id'] ?? 0).toString(),
+        ) ??
+        0;
+  }
+
   // ----------------------------
   // SOLICITUDES (bibliotecario/admin)
   // ----------------------------
   // GET /api/bibliotecario/solicitudes?estado=pendiente
   static Future<List<Map<String, dynamic>>> getSolicitudesPendientes() async {
     final url = Uri.parse('$baseUrl/api/bibliotecario/solicitudes/pendientes');
+    final r = await http.get(url, headers: _headers());
+    if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
+
+    final j = jsonDecode(r.body);
+    final List list = (j is List) ? j : (j['data'] is List ? j['data'] : []);
+    return list
+        .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
+  // GET /api/solicitudes/me -> solicitudes del usuario autenticado
+  static Future<List<Map<String, dynamic>>> getMisSolicitudes() async {
+    final url = Uri.parse('$baseUrl/api/solicitudes/me');
     final r = await http.get(url, headers: _headers());
     if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
 
