@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import 'book_detail_screen.dart';
 import 'mis_solicitudes_screen.dart';
 import 'perfil_usuario.dart';
+import 'login_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -50,23 +51,50 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(90),
-        child: Container(
-          color: azul,
-          padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
-          child: Column(
-            children: [
-              const Text(
-                'BIBLIOTECA IER',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
+        child: Stack(
+          children: [
+            Container(
+              color: azul,
+              padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
+              child: Column(
+                children: [
+                  const Text(
+                    'BIBLIOTECA IER',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(height: 2, color: Color(0xFFD4A537)),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 30, right: 20),
+                child: ElevatedButton.icon(
+                  icon: Icon(Icons.logout),
+                  label: Text('Salir'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: dorado,
+                    foregroundColor: Colors.black,
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 8),
-              Container(height: 2, color: dorado),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -151,7 +179,6 @@ class _HomePageState extends State<HomePage> {
                     child: Center(child: CircularProgressIndicator()),
                   )
                 : _bookCarousel(
-                    // Mostrar los libros más recientes basados en `id` (mayor id = más nuevo).
                     (List<Map<String, dynamic>>.from(libros)..sort((a, b) {
                           final ai =
                               int.tryParse((a['id'] ?? '').toString()) ?? 0;
@@ -166,18 +193,12 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       bottomNavigationBar: Container(
-        height: 60,
         color: azul,
+        height: 60,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-              icon: const Icon(Icons.home, color: Color(0xFFD4A537), size: 30),
-            ),
-            IconButton(
+            TextButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -187,9 +208,12 @@ class _HomePageState extends State<HomePage> {
                 );
               },
               icon: const Icon(
-                Icons.menu_book,
+                Icons.assignment_outlined,
                 color: Color(0xFFD4A537),
-                size: 30,
+              ),
+              label: const Text(
+                'Solicitudes',
+                style: TextStyle(color: Color(0xFFD4A537)),
               ),
             ),
           ],
