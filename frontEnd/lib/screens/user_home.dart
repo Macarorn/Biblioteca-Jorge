@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
@@ -17,6 +19,8 @@ class _HomePageState extends State<HomePage> {
 
   bool loading = true;
   List<Map<String, dynamic>> libros = [];
+  Timer? _debounce;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -24,10 +28,10 @@ class _HomePageState extends State<HomePage> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({String q = ''}) async {
     setState(() => loading = true);
     try {
-      final data = await ApiService.getLibros();
+      final data = await ApiService.getLibros(search: q);
       if (!mounted) return;
       setState(() {
         libros = data;
@@ -78,12 +82,22 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const TextField(
-                      decoration: InputDecoration(
+                    child: TextField(
+                      decoration: const InputDecoration(
                         hintText: 'Buscar',
                         prefixIcon: Icon(Icons.search),
                         border: InputBorder.none,
                       ),
+                      onChanged: (v) {
+                        _searchQuery = v;
+                        _debounce?.cancel();
+                        _debounce = Timer(
+                          const Duration(milliseconds: 400),
+                          () {
+                            _load(q: _searchQuery.trim());
+                          },
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -230,5 +244,11 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 }

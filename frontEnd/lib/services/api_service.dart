@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -353,6 +354,50 @@ class ApiService {
   static Future<void> agregarUsuario(Map<String, dynamic> u) async {
     final url = Uri.parse('$baseUrl/api/admin/usuarios');
     final r = await http.post(url, headers: _headers(), body: jsonEncode(u));
+    if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
+  }
+
+  // GET /api/usuarios/me -> perfil del usuario autenticado
+  static Future<Map<String, dynamic>> getMiPerfil() async {
+    final url = Uri.parse('$baseUrl/api/usuarios/me');
+    final r = await http.get(url, headers: _headers());
+    if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
+    final j = jsonDecode(r.body);
+    return Map<String, dynamic>.from(j as Map);
+  }
+
+  // PUT /api/usuarios/me -> actualizar perfil propio (nombre, apellido, correo, telefono)
+  static Future<void> updateMiPerfil({
+    required String nombre,
+    required String apellido,
+    required String correo,
+    required String telefono,
+  }) async {
+    final url = Uri.parse('$baseUrl/api/usuarios/me');
+    final r = await http.put(
+      url,
+      headers: _headers(),
+      body: jsonEncode({
+        'nombre': nombre,
+        'apellido': apellido,
+        'correo': correo,
+        'telefono': telefono,
+      }),
+    );
+    if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
+  }
+
+  // PUT /api/usuarios/:id -> admin actualiza usuario (nombre, apellido, correo, telefono, rol)
+  static Future<void> adminUpdateUsuario(
+    int id,
+    Map<String, dynamic> cambios,
+  ) async {
+    final url = Uri.parse('$baseUrl/api/usuarios/$id');
+    final r = await http.put(
+      url,
+      headers: _headers(),
+      body: jsonEncode(cambios),
+    );
     if (r.statusCode < 200 || r.statusCode >= 300) throw _httpError(r);
   }
 

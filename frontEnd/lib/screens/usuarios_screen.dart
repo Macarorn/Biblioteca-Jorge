@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../services/api_service.dart';
 import 'agregar_usuario_screen.dart';
-// import 'editar_usuario_screen.dart'; // ✅ cuando lo crees, descomenta
+import 'editar_usuario_screen.dart';
 
 class UsuariosScreen extends StatefulWidget {
   const UsuariosScreen({super.key});
@@ -44,9 +46,9 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error cargando usuarios: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("❌ Error cargando usuarios: $e")));
     }
   }
 
@@ -89,7 +91,10 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
             children: [
               Text(
                 "$nombre $apellido",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               const SizedBox(height: 10),
               Text("Documento: $documento"),
@@ -113,19 +118,16 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                           ? null
                           : () async {
                               Navigator.pop(context);
-
-                              // ✅ Cuando tengas EditarUsuarioScreen, conecta aquí:
-                              // await Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (_) => EditarUsuarioScreen(usuario: u),
-                              //   ),
-                              // );
-                              // _load(q: query.trim());
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Editar: pendiente de implementar")),
+                              final updated = await Navigator.push<bool?>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      EditarUsuarioScreen(usuario: u),
+                                ),
                               );
+                              if (updated == true) {
+                                _load(q: query.trim());
+                              }
                             },
                       child: const Text("EDITAR"),
                     ),
@@ -142,7 +144,8 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
   @override
   Widget build(BuildContext context) {
     // ✅ ordenar alfabéticamente: apellido, luego nombre
-    final sorted = [...usuarios]..sort((a, b) {
+    final sorted = [...usuarios]
+      ..sort((a, b) {
         final apA = (a["apellido"] ?? "").toString().toLowerCase();
         final apB = (b["apellido"] ?? "").toString().toLowerCase();
         final cmpAp = apA.compareTo(apB);
@@ -193,7 +196,9 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                   const SizedBox(height: 12),
                   Expanded(
                     child: sorted.isEmpty
-                        ? const Center(child: Text("No hay usuarios para mostrar"))
+                        ? const Center(
+                            child: Text("No hay usuarios para mostrar"),
+                          )
                         : ListView.builder(
                             itemCount: sorted.length,
                             itemBuilder: (_, i) {
@@ -201,7 +206,8 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
 
                               final nombre = (u["nombre"] ?? "").toString();
                               final apellido = (u["apellido"] ?? "").toString();
-                              final documento = (u["documento"] ?? "").toString();
+                              final documento = (u["documento"] ?? "")
+                                  .toString();
                               final rol = (u["rol"] ?? "").toString();
 
                               return Card(
@@ -209,7 +215,9 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                                   leading: const Icon(Icons.person),
                                   title: Text(
                                     "$apellido $nombre",
-                                    style: const TextStyle(fontWeight: FontWeight.w800),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                                   subtitle: Text("Doc: $documento • Rol: $rol"),
                                   onTap: () => _showUserModal(u),
